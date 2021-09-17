@@ -18,6 +18,8 @@ services:
       - traefik
     labels:
       - "instance.count=1"
+    environment:
+      - "JAVA_OPTS=-Xmx256m"
     deploy:
       replicas: 1
       placement:
