@@ -24,13 +24,13 @@ services:
         constraints:
             - "node.labels.name==batch"
         max_replicas_per_node: 1
-      # resources:
-      #   limits:
-      #     cpus: "0.50"
-      #     memory: "512M"
-      #   reservations:
-      #     cpus: "0.25"
-      #     memory: "128M"        
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "512M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"        
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=traefik"
