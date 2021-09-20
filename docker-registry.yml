@@ -1,0 +1,52 @@
+version: '3.8'
+networks:
+  traefik:
+    driver: overlay
+    name: traefik
+    external: true
+
+services:
+  registry:
+    image: registry:2
+    networks:
+      - traefik
+    environment:
+      - REGISTRY_STORAGE=s3
+      - REGISTRY_STORAGE_S3_REGION=us-east-1
+      - REGISTRY_STORAGE_S3_BUCKET=tempsadare
+      - REGISTRY_STORAGE_S3_ACCESSKEY=${ACCESS_KEY}
+      - REGISTRY_STORAGE_S3_SECRETKEY=${SECRET_KEY}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "256M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - "node.labels.type==batch"
+      update_config:
+        parallelism: 1
+        delay: 15s
+        monitor: 5s
+        failure_action: rollback
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik"
+        - "traefik.http.routers.docker-registry.rule=Host(`docker-registry.glpapps.com`)"
+        - "traefik.http.routers.docker-registry.service=docker-registry"
+        - "traefik.http.routers.docker-registry.entrypoints=web"
+        - "traefik.http.routers.docker-registry.middlewares=redirect-https"
+        - "traefik.http.routers.docker-registry-secure.tls=true"
+        - "traefik.http.routers.docker-registry-secure.rule=Host(`docker-registry.glpapps.com`)"
+        - "traefik.http.routers.docker-registry-secure.entrypoints=websecure"
+        - "traefik.http.routers.docker-registry-secure.middlewares=auth"
+        - "traefik.http.routers.docker-registry-secure.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.docker-registry-secure.tls.domains[0].main=glpapps.com"
+        - "traefik.http.routers.docker-registry-secure.tls.domains[0].sans=*.glpapps.com"
+        - "traefik.http.routers.docker-registry-secure.service=docker-registry"
+        - "traefik.http.services.docker-registry.loadbalancer.server.port=5000"
