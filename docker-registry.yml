@@ -12,8 +12,8 @@ services:
       - traefik
     environment:
       - REGISTRY_STORAGE=s3
-      - REGISTRY_STORAGE_S3_REGION=us-east-1
-      - REGISTRY_STORAGE_S3_BUCKET=tempsadare
+      - REGISTRY_STORAGE_S3_REGION=eu-west-2
+      - REGISTRY_STORAGE_S3_BUCKET=docker-image-registry-xvfbnm
       - REGISTRY_STORAGE_S3_ACCESSKEY=${ACCESS_KEY}
       - REGISTRY_STORAGE_S3_SECRETKEY=${SECRET_KEY}
     deploy:
@@ -37,12 +37,12 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=traefik"
-        - "traefik.http.routers.docker-registry.rule=Host(`docker-registry.glpapps.com`)"
+        - "traefik.http.routers.docker-registry.rule=Host(`registry.glpapps.com`)"
         - "traefik.http.routers.docker-registry.service=docker-registry"
         - "traefik.http.routers.docker-registry.entrypoints=web"
         - "traefik.http.routers.docker-registry.middlewares=redirect-https"
         - "traefik.http.routers.docker-registry-secure.tls=true"
-        - "traefik.http.routers.docker-registry-secure.rule=Host(`docker-registry.glpapps.com`)"
+        - "traefik.http.routers.docker-registry-secure.rule=Host(`registry.glpapps.com`)"
         - "traefik.http.routers.docker-registry-secure.entrypoints=websecure"
         - "traefik.http.routers.docker-registry-secure.middlewares=auth"
         - "traefik.http.routers.docker-registry-secure.tls.certresolver=letsencrypt"
