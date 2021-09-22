@@ -11,6 +11,7 @@ services:
   jenkins:
     hostname: "{{.Node.Hostname}}"
     image: yesalam/jenkins-dood:alpine
+    command: docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/ec2-user/kazi/jenkins:/var/jenkins_home
