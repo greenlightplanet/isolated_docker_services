@@ -1,0 +1,102 @@
+version: '3.8'
+networks:
+  traefik:
+    driver: overlay
+    name: traefik
+    external: true
+
+services:
+  registry:
+    image: registry:2
+    networks:
+      - traefik
+    environment:
+      - REGISTRY_STORAGE=s3
+      - REGISTRY_STORAGE_S3_REGION=eu-west-2
+      - REGISTRY_STORAGE_S3_BUCKET=docker-image-registry-xvfbnm
+      - REGISTRY_STORAGE_S3_ACCESSKEY=${ACCESS_KEY}
+      - REGISTRY_STORAGE_S3_SECRETKEY=${SECRET_KEY}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "256M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - "node.labels.type==batch"
+      update_config:
+        parallelism: 1
+        delay: 15s
+        monitor: 5s
+        failure_action: rollback
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik"
+        - "traefik.http.routers.dr.rule=Host(`dr.glpapps.com`)"
+        - "traefik.http.routers.dr.service=dr"
+        - "traefik.http.routers.dr.entrypoints=web"
+        - "traefik.http.routers.dr.middlewares=redirect-https"
+        - "traefik.http.routers.dr-secure.tls=true"
+        - "traefik.http.routers.dr-secure.rule=Host(`dr.glpapps.com`)"
+        - "traefik.http.routers.dr-secure.entrypoints=websecure"
+        - "traefik.http.routers.dr-secure.middlewares=auth"
+        - "traefik.http.routers.dr-secure.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.dr-secure.tls.domains[0].main=glpapps.com"
+        - "traefik.http.routers.dr-secure.tls.domains[0].sans=*.glpapps.com"
+        - "traefik.http.routers.dr-secure.service=dr"
+        - "traefik.http.services.dr.loadbalancer.server.port=5000"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/v2 || exit 1" ]
+      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  jenkins:
+      hostname: "{{.Node.Hostname}}"
+      image: yesalam/jenkins-dood:alpine
+      depends_on:
+        - registry
+      command: docker login -u=${DOCKER_USERNAME} -p=${DOCKER_PASSWORD} dr.glpapps.com
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /home/ec2-user/kazi/jenkins:/var/jenkins_home
+      networks:
+        - traefik
+      labels:
+        - "instance.count=1"
+      environment:
+        - "JAVA_OPTS=-Xmx256m"
+      deploy:
+        replicas: 1
+        placement:
+          constraints:
+              - "node.labels.name==batch"
+          max_replicas_per_node: 1
+        resources:
+          limits:
+            cpus: "0.50"
+            memory: "1500M"
+          reservations:
+            cpus: "0.25"
+            memory: "128M"        
+        labels:
+          - "traefik.enable=true"
+          - "traefik.docker.network=traefik"
+          - "traefik.http.routers.jenkins.rule=Host(`cicd.glpapps.com`)"
+          - "traefik.http.routers.jenkins.service=jenkins"
+          - "traefik.http.routers.jenkins.entrypoints=web"
+          - "traefik.http.routers.jenkins.middlewares=redirect-https"
+          - "traefik.http.routers.jenkins-secure.tls=true"
+          - "traefik.http.routers.jenkins-secure.rule=Host(`cicd.glpapps.com`)"
+          - "traefik.http.routers.jenkins-secure.entrypoints=websecure"
+          - "traefik.http.routers.jenkins-secure.tls.certresolver=letsencrypt"
+          - "traefik.http.routers.jenkins-secure.tls.domains[0].main=glpapps.com"
+          - "traefik.http.routers.jenkins-secure.tls.domains[0].sans=*.glpapps.com"
+          - "traefik.http.routers.jenkins-secure.service=jenkins"
+          - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
