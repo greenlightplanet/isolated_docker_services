@@ -77,11 +77,7 @@ services:
         replicas: 1
         placement:
           constraints:
-<<<<<<< HEAD
               - "node.labels.type==batch"
-=======
-              - "node.labels.name==batch"
->>>>>>> cc88fb70f727b0255f9945a0d09a687ef6c7e2d2
           max_replicas_per_node: 1
         resources:
           limits:
