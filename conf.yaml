@@ -1,0 +1,48 @@
+version: '3.8'
+
+
+networks:
+  traefik:
+    driver: overlay
+    name: traefik
+    external: true
+volumes:
+  narad_vol:
+
+services:
+  conf:
+    hostname: "{{.Node.Hostname}}"
+    image: yesalam/narad:alpha
+    command: narad -d ${DB} -j ${JWT} -vvv
+    volumes:
+      - narad_vol:/opt/
+    networks:
+      - traefik
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+            - "node.labels.type==worker"
+        max_replicas_per_node: 1
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: "1500M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"        
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik"
+        - "traefik.http.routers.conf.rule=Host(`conf.glpapps.com`)"
+        - "traefik.http.routers.conf.service=conf"
+        - "traefik.http.routers.conf.entrypoints=web"
+        - "traefik.http.routers.conf.middlewares=redirect-https"
+        - "traefik.http.routers.conf-secure.tls=true"
+        - "traefik.http.routers.conf-secure.rule=Host(`conf.glpapps.com`)"
+        - "traefik.http.routers.conf-secure.entrypoints=websecure"
+        - "traefik.http.routers.conf-secure.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.conf-secure.tls.domains[0].main=glpapps.com"
+        - "traefik.http.routers.conf-secure.tls.domains[0].sans=*.glpapps.com"
+        - "traefik.http.routers.conf-secure.service=conf"
+        - "traefik.http.services.conf.loadbalancer.server.port=8080"
