@@ -12,7 +12,7 @@ volumes:
 services:
   conf:
     hostname: "{{.Node.Hostname}}"
-    image: yesalam/narad:alpha
+    image: yesalam/narad:alpha4
     command: narad -d ${DB} -j ${JWT} -vvv
     volumes:
       - narad_vol:/opt/
