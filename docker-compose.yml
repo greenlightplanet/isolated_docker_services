@@ -10,6 +10,8 @@ services:
     image: registry:2
     networks:
       - traefik
+    ports:
+      - "8807:5000"
     environment:
       - REGISTRY_STORAGE=s3
       - REGISTRY_STORAGE_S3_REGION=eu-west-2
@@ -69,6 +71,8 @@ services:
         - /home/ec2-user/kazi/jenkins:/var/jenkins_home
       networks:
         - traefik
+      ports:
+        - "8808:8080"
       labels:
         - "instance.count=1"
       environment:
